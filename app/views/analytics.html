@@ -1,0 +1,29 @@
+{% extends 'layouts/default.html' %}
+
+{% block main %}
+  <h2>Tags Analytics</h2>
+{% endblock %}
+
+{% block content %}
+  {% if (analytics.length) %}
+    {% for tag in analytics %}
+      <h3> <a href="{{'/tags/' + tag.tag}}"> {{tag.tag}} </a><i class="muted fa fa-tag"></i></h3>
+      <table>
+      	<col width="70">
+  		<col width="70">
+      	<tr>
+      		<th>Word</th>
+      		<th>Frequency</th>
+      	</tr>
+      {% for word in tag.words %}
+      <tr>
+      	<td>{{ word.word }} </td>
+      	<td> {{word.count}}</td>
+  	  </tr>
+      {% endfor %}
+	</table>
+
+    {% endfor %}
+  {% endif %}
+    <hr />
+{% endblock %}

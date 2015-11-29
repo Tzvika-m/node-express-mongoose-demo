@@ -172,7 +172,33 @@ ArticleSchema.statics = {
       .limit(limit)
       .skip(limit * page)
       .exec();
+  },
+
+  /**
+   * Find all tags
+   *
+   * @api private
+   */
+
+  getTags: function () {
+    //console.log("got tag: " + tag);
+    return this.find({},{tags:1, _id:0})
+      .exec();
+  }, 
+
+  /**
+   * Find article by tag
+   *
+   * @param {tag} tag
+   * @api private
+   */
+
+  loadByTag: function (tag) {
+    //console.log("got tag: " + tag);
+    return this.find({ tags: tag })
+      .exec();
   }
+
 };
 
 mongoose.model('Article', ArticleSchema);
