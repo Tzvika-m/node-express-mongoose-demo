@@ -175,27 +175,13 @@ ArticleSchema.statics = {
   },
 
   /**
-   * Find all tags
-   *
+   * List articles without population
+   * 
    * @api private
    */
 
-  getTags: function () {
-    //console.log("got tag: " + tag);
-    return this.find({},{tags:1, _id:0})
-      .exec();
-  }, 
-
-  /**
-   * Find article by tag
-   *
-   * @param {tag} tag
-   * @api private
-   */
-
-  loadByTag: function (tag) {
-    //console.log("got tag: " + tag);
-    return this.find({ tags: tag })
+  listSimple: function () {
+    return this.find()
       .exec();
   }
 

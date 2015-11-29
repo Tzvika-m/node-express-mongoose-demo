@@ -108,7 +108,7 @@ module.exports = function (app, passport) {
 
   // tag routes
   app.get('/tags/:tag', tags.index);
-  app.get('/tagsAnalytics', tags.loadTags, tags.loadTagsArticles, tags.analytics);
+  app.get('/tagsAnalytics', tags.loadArticles, tags.buildAnalytics);
 
 
   /**

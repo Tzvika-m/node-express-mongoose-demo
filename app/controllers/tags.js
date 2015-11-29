@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const wrap = require('co-express');
 const Article = mongoose.model('Article');
 
-const blackList = ["the", "is", "are", "am", "a", "of", "to", "it", "and", "at"];
+const blackList = ["the", "is", "are", "am", "a", "of", "to", "it", "and", "at", ""];
 
 /**
  * List items tagged with a tag
@@ -35,74 +35,64 @@ exports.index = wrap(function* (req, res) {
   });
 });
 
-
-exports.loadTags = wrap(function* (req, res, next) {
-  var articleTags = yield Article.getTags(); 
-  req.tags = [];
-
-  // Going over all the tags by articles and building a distinct array
-  for (var i=0; i < articleTags.length; i++) {
-    var curArticleTags = articleTags[i].tags.split(",");
-    for (var j=0; j < curArticleTags.length; j++) {
-      var curTag = curArticleTags[j];
-      if (indexOfByProp(req.tags, "tag", curTag) === -1) {
-        req.tags.push({tag: curTag});
-      }
-    }
-  }
+exports.loadArticles = wrap(function* (req, res, next) {
+  req.articles = yield Article.listSimple(); 
   next();
 });
 
-
-exports.loadTagsArticles = wrap(function* (req, res, next) {
-    // Loading each tag's articles
-  for (var i = 0; i < req.tags.length; i++) {
-    req.tags[i].articles = yield Article.loadByTag(req.tags[i].tag);        
-  }
-  next();
-});
-
-
-exports.analytics = function (req, res) {
+exports.buildAnalytics = function(req, res) {
   var analytics = [];
-  // For each tag
-  for (var k = 0; k < req.tags.length; k++) {
-    analytics[k] = {tag: req.tags[k].tag, words : []};
-    // For each article
-    for (var i = 0; i< req.tags[k].articles.length; i++) {
-      var wordsInArticle = req.tags[k].articles[i].body.split(/\W+/);
-      // For each word
-      for (var j = 0; j < wordsInArticle.length; j++) {
-        var word = wordsInArticle[j].toLowerCase();
-        // Check if the word is blacklisted
-        if (blackList.indexOf(word) === -1) {
-          var l = indexOfByProp(analytics[k].words, "word", word);
-          if (l !== -1) {
-            analytics[k].words[l].count++;
+  // For each article
+  for (var i = 0; i < req.articles.length; i++) {
+    // var wordsInArticle = req.articles[i].body.split(/\W+/);
+    var wordsInArticle = req.articles[i].body.split(/[\s,!?.]+/);
+    // For each word in the article
+    for (var j = 0; j < wordsInArticle.length; j++) {
+      var word = wordsInArticle[j].toLowerCase();
+      // Check if the word isn't blacklisted
+      if (blackList.indexOf(word) === -1) {
+        var curArticleTags = req.articles[i].tags.split(","); 
+        // Go over each of the article's tags and insert\update it's count
+        for (var k = 0; k < curArticleTags.length; k++) {
+          var curTag = curArticleTags[k];
+          var l = indexOfByProp(analytics, "tag", curTag);
+          // If it's the first time this tag appears
+          if (l === -1) {
+            analytics.push({tag: curTag, words : [{word: word, count : 1}]});
           }
-          else { 
-            analytics[k].words.push({word: word, count : 1});
+          else {
+            var m = indexOfByProp(analytics[l].words, "word", word);
+            // If it's the first time this word appears in an article with this tag
+            if (m === -1) {
+              analytics[l].words.push({word: word, count : 1})
+            }
+            else {
+              analytics[l].words[m].count++;
+            }
           }
         }
       }
     }
-    // Sort the words arrays by count
-    analytics[k].words.sort(function(a, b) {
+  }
+
+  // Sort the words by count and keep only the top 10
+  for (var i = 0; i< analytics.length; i++){
+    analytics[i].words.sort(function(a, b) {
       return parseFloat(b.count) - parseFloat(a.count);
     });
-    // Keep only the top 10
-    analytics[k].words = analytics[k].words.slice(0,10);
+    analytics[i].words = analytics[i].words.slice(0,10);
   }
-    
+
   res.render('analytics', {analytics: analytics});
 };
 
 
-
 function indexOfByProp(arr, prop, val) {
-  for (var i = 0; i < arr.length; i++) {
-    if (arr[i][prop] === val)
-      return i;
+  if (arr.length) {
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i][prop] === val)
+        return i;
+    }
   }
   return -1;
 }
